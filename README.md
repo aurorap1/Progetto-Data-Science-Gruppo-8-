@@ -23,9 +23,9 @@ Costruire e confrontare modelli di classificazione binaria in grado di prevedere
 1. **Descrizione e Comprensione del dataset** — analisi di dimensioni, tipi di variabili, valori mancanti e distribuzione della variabile target.
 2. **Analisi esplorativa e visualizzazione** — studio delle relazioni tra le variabili e il churn (tipo di contratto, anzianità, spesa, servizio internet, ecc.).
 3. **Modellazione** — codifica delle variabili categoriche, gestione dei valori mancanti, suddivisione Train/Test 70/30 stratificata e addestramento di tre modelli di classificazione:
-- Decision Tree
-- Regressione Logistica
-- Random Forest
+    - Decision Tree
+    - Regressione Logistica
+    - Random Forest
 4. **Valutazione e interpretazione** — confronto dei modelli tramite metriche di classificazione (accuracy, precision, recall, F1) e interpretazione dei risultati.
 
 ## Librerie Python utilizzate

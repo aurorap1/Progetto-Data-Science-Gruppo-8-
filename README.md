@@ -7,17 +7,21 @@ Costruire e confrontare modelli di classificazione binaria in grado di prevedere
 
 ## Dataset
 - **Fonte:** Telco Customer Churn
-- **Osservazioni:** 7.043 clienti
+- **Osservazioni:** 7043 clienti
 - **Variabili:** 21 (demografiche, di servizio, contrattuali e di spesa)
-- **Variabile target:** `Churn` (Yes/No), con distribuzione squilibrata (~73,5% No / ~26,5% Yes)
+- **Variabile target:** `Churn` (Yes/No), con distribuzione squilibrata (~73.5% No / ~26.5% Yes)
 
 ## Struttura del repository
+## Struttura del repository
+```
 /
-├──DATA/
-├──Notebook/
-├──FIGURES/
-├──REPORT/
-├── README.md
+├── DATA/
+├── Notebook/
+├── FIGURES/
+├── REPORT/
+└── README.md
+```
+
 
 ## Fasi del progetto
 1. **Descrizione e Comprensione del dataset** — analisi di dimensioni, tipi di variabili, valori mancanti e distribuzione della variabile target.
@@ -26,7 +30,7 @@ Costruire e confrontare modelli di classificazione binaria in grado di prevedere
     - Decision Tree
     - Regressione Logistica
     - Random Forest
-4. **Valutazione e interpretazione** — confronto dei modelli tramite metriche di classificazione (accuracy, precision, recall, F1) e interpretazione dei risultati.
+4. **Valutazione e interpretazione dei risultati** — confronto dei modelli tramite metriche di classificazione (accuracy, precision, recall, F1) e interpretazione dei risultati.
 
 ## Librerie Python utilizzate
 - Pandas, NumPy

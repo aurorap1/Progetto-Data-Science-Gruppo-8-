@@ -12,7 +12,6 @@ Costruire e confrontare modelli di classificazione binaria in grado di prevedere
 - **Variabile target:** `Churn` (Yes/No), con distribuzione squilibrata (~73.5% No / ~26.5% Yes)
 
 ## Struttura del repository
-## Struttura del repository
 ```
 /
 ├── DATA/
@@ -24,13 +23,32 @@ Costruire e confrontare modelli di classificazione binaria in grado di prevedere
 
 
 ## Fasi del progetto
-1. **Descrizione e Comprensione del dataset** — analisi di dimensioni, tipi di variabili, valori mancanti e distribuzione della variabile target.
+Nel Notebook del progetto sono contenute le seguenti fasi: 
+
+1. **Descrizione e Comprensione del dataset** — analisi di dimensioni, tipi di variabili, valori mancanti, distribuzione della variabile target 'Churn', delle variabili di spesa, dei servizi di rete e di intrattenimento, del metodo di pagamento e del tipo di contratto .
 2. **Analisi esplorativa e visualizzazione** — studio delle relazioni tra le variabili e il churn (tipo di contratto, anzianità, spesa, servizio internet, ecc.).
-3. **Modellazione** — codifica delle variabili categoriche, gestione dei valori mancanti, suddivisione Train/Test 70/30 stratificata e addestramento di tre modelli di classificazione:
+3. **Modellazione** — codifica delle variabili categoriche, gestione dei valori mancanti, eliminazione della variabile Customer ID, suddivisione Train/Test 70/30 stratificata e addestramento di tre modelli di classificazione:
     - Decision Tree
     - Regressione Logistica
     - Random Forest
-4. **Valutazione e interpretazione dei risultati** — confronto dei modelli tramite metriche di classificazione (accuracy, precision, recall, F1) e interpretazione dei risultati.
+
+A partire dalla feature importance della Random Forest, è stato selezionato un sottoinsieme di 6 variabili che maggiormente influiscono sulla variabile 'Churn', sulla base delle quali sono stati nuovamente addestrati i modelli. 
+
+Per ciascun modello sono state calcolate le metriche di classificazione (accuracy, precision, recall, F1) e la relativa matrice di confusione.
+
+4. **Valutazione e interpretazione dei risultati** — confronto dei modelli tramite le metriche di classificazione precedentemente misurate e interpretazione dei risultati.
+
+## Report
+Il progetto include un **report**, redatto in LaTeX tramite Overleaf, che accompagna e completa l'analisi. Mentre il notebook documenta passo passo il codice e i risultati, il report è il luogo in cui questi risultati vengono **interpretati e discussi**
+
+Il report è organizzato nelle seguenti sezioni:
+
+- **Introduzione** — Descrizione dell'obiettivo del progetto: prevedere l'abbandono di un cliente (`Churn`, Yes/No) a partire da variabili demografiche, contrattuali e di servizio.
+- **Descrizione del dataset** — Struttura del dataset Telco Customer Churn, distribuzione del target e analisi della qualità dei dati.
+- **Metodologia** — La metodologia contiene inormazioni riguardo l'analisi esplorativa (descrizione delle ipotesi formulate e profilo del cliente a rischio abbandono) e la fase di modellazione (preprocessing, codifica delle variabili, suddivisione Train/Test e scelta dei tre modelli).
+- **Risultati** — Le metriche di ciascun modello (accuracy, precision, recall, F1) raccolte in una tabella comparativa.
+- **Discussione** — Punti di forza e limiti di ciascun modello, tipologia di errori, interpretabilità e costo computazionale dei tre approcci. I risultati vengono infine ricollegati alle ipotesi formulate nella fase esplorativa.
+- **Conclusione** — Sintesi dei risultati.
 
 ## Librerie Python utilizzate
 - Pandas, NumPy

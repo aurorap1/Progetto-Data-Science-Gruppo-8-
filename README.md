@@ -15,9 +15,10 @@ Costruire e confrontare modelli di classificazione binaria in grado di prevedere
 ```
 /
 ├── DATA/
-├── Notebook/
 ├── FIGURES/
+├── Notebook/
 ├── REPORT/
+├── LICENSE
 └── README.md
 ```
 

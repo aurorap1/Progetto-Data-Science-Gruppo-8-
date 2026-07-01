@@ -1,0 +1,244 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+\usepackage{subcaption}
+
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue
+}
+
+\title{\textbf{Previsione del Churn dei Clienti}\\
+\large Un confronto tra modelli di classificazione}
+\author{Gruppo 8 --- Gaia Gasparini, Paolicchi Aurora, Volpato Lucrezia\\
+\small Introduzione alla Data Science e al Pensiero Computazionale, a.a.\ 2025--26}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Questo lavoro, sviluppato sulla base dei materiali didattici forniti durante il corso di "Introduzione alla data science e al pensiero computazionale" \cite{PoggiIntroDS2026}, affronta il problema della previsione dell'abbandono dei clienti (\emph{customer churn}) in ambito telecomunicazioni, utilizzando il dataset Telco Customer Churn (7032 osservazioni dopo la pulizia, 30 feature dopo la codifica). Sono stati addestrati e confrontati tre modelli di classificazione --- Regressione Logistica, Decision Tree e Random Forest --- sia sull'insieme completo delle variabili sia su un sottoinsieme di sei feature selezionate tramite feature importance. I risultati mostrano che la Regressione Logistica ottiene le prestazioni migliori sulla classe minoritaria (recall 0.57 sulla classe Churn, accuracy 0.81), rimanendo al contempo il modello più interpretabile e meno costoso computazionalmente. Lo squilibrio tra le classi (73.5\% No Churn vs 26.5\% Churn) rappresenta la principale criticità dell'analisi e influenza in modo determinante la scelta delle metriche di valutazione.
+\end{abstract}
+
+% =====================================================
+\section{Introduzione}
+\label{sec:introduzione}
+
+Il churn, ovvero l'abbandono del servizio da parte dei clienti, rappresenta una delle principali criticità per le aziende che operano su modelli di abbonamento, come gli operatori di telecomunicazioni. La sua rilevanza è anzitutto economica: acquisire un nuovo cliente comporta costi sensibilmente superiori rispetto a quelli necessari per trattenerne uno esistente. Essere in grado di individuare in anticipo i clienti a rischio consente quindi all'azienda di intervenire con azioni mirate di fidelizzazione, riducendo le perdite e ottimizzando le risorse.
+
+L'obiettivo di questo progetto è costruire un modello predittivo capace di classificare i clienti in base alla probabilità di abbandonare il servizio, a partire da variabili demografiche, contrattuali e relative ai servizi sottoscritti. Si tratta di un problema di classificazione binaria, affrontato seguendo l'intero flusso di un progetto di data science: comprensione e pulizia dei dati, analisi esplorativa, modellazione e valutazione critica dei risultati.
+
+Il codice completo, il dataset e i materiali del progetto sono disponibili al seguente repository GitHub: \url{https://github.com/aurorap1/Progetto-Data-Science-Gruppo-8-}.
+
+% =====================================================
+\section{Descrizione del Dataset}
+\label{sec:dataset}
+
+Il dataset \emph{Telco Customer Churn} contiene 7043 osservazioni e 21 variabili, ciascuna riferita a un singolo cliente. Le variabili sono in prevalenza categoriche (genere, tipo di contratto, metodo di pagamento, servizi sottoscritti), mentre quelle numeriche continue sono tre: l'anzianità del cliente in mesi (\texttt{tenure}), la spesa mensile (\texttt{MonthlyCharges}) e la spesa cumulata (\texttt{TotalCharges}). È inoltre presente la variabile \texttt{customerID}, un identificativo univoco privo di valore predittivo, rimosso prima della modellazione. La variabile target è \texttt{Churn}, che assume valori ``Yes'' / ``No''.
+
+La Tabella~\ref{tab:variabili} riporta un riepilogo delle variabili con il rispettivo tipo e i valori ammessi.
+
+\begin{table}[h]
+\centering
+\caption{Riepilogo delle variabili del dataset Customer Churn.}
+\label{tab:variabili}
+\begin{tabular}{lll}
+\hline
+\textbf{Variabile} & \textbf{Tipo} & \textbf{Valori} \\
+\hline
+customerID & Identificativo & Codice univoco \\
+gender & Categorica & Male, Female \\
+SeniorCitizen & Binaria & 0, 1 \\
+Partner & Binaria & Yes, No \\
+Dependents & Binaria & Yes, No \\
+tenure & Numerica & 0--72 (mesi) \\
+PhoneService & Binaria & Yes, No \\
+MultipleLines & Categorica & Yes, No, No phone service \\
+InternetService & Categorica & DSL, Fiber optic, No \\
+OnlineSecurity & Categorica & Yes, No, No internet service \\
+OnlineBackup & Categorica & Yes, No, No internet service \\
+DeviceProtection & Categorica & Yes, No, No internet service \\
+TechSupport & Categorica & Yes, No, No internet service \\
+StreamingTV & Categorica & Yes, No, No internet service \\
+StreamingMovies & Categorica & Yes, No, No internet service \\
+Contract & Categorica & Month-to-month, One year, Two year \\
+PaperlessBilling & Binaria & Yes, No \\
+PaymentMethod & Categorica & Electronic check, Mailed check, \\
+ & & Bank transfer, Credit card \\
+MonthlyCharges & Numerica & 18.25--118.75 \\
+TotalCharges & Numerica & 18.80--8684.80 \\
+Churn & Binaria (target) & Yes, No \\
+\hline
+\end{tabular}
+\end{table}
+
+Un primo aspetto rilevante riguarda la distribuzione della variabile target (Figura~\ref{fig:churn}): i clienti che non abbandonano costituiscono il \textbf{73.5\%} del totale, contro il \textbf{26.5\%} di clienti che effettuano churn. Questo squilibrio rappresenta un elemento centrale per l'intero progetto, poiché condiziona la scelta delle metriche di valutazione: un modello che si limitasse a predire sempre la classe ``No Churn'' otterrebbe un'accuracy pari al 73.5\%, pur senza individuare alcun cliente a rischio.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.58\textwidth]{churn_distribution.png}
+\caption{Distribuzione della variabile target \texttt{Churn}: 73.46\% No vs 26.54\% Yes.}
+\label{fig:churn}
+\end{figure}
+
+Nel corso dell'analisi preliminare sono stati individuati due problemi di qualità dei dati. In primo luogo, la variabile \texttt{TotalCharges}, pur rappresentando un importo, era codificata come stringa e presentava 11 valori vuoti, tutti corrispondenti a clienti con \texttt{tenure = 0}, ovvero clienti appena acquisiti privi ancora di una fattura cumulata. Si tratta di valori mancanti con una spiegazione logica: tali righe sono state rimosse e la variabile convertita in formato numerico, portando il dataset a 7032 osservazioni. In secondo luogo, è emersa una forte ridondanza tra le tre variabili numeriche: \texttt{TotalCharges} è fortemente correlata sia con \texttt{tenure} sia con \texttt{MonthlyCharges}, coerentemente con il fatto che la spesa totale corrisponde approssimativamente al prodotto tra canone mensile e mesi di permanenza.
+
+% =====================================================
+\section{Metodologia}
+\label{sec:metodologia}
+
+\subsection{Analisi esplorativa}
+Prima della modellazione sono state verificate alcune ipotesi sui fattori associati all'abbandono, incrociando la variabile target con le principali variabili contrattuali, economiche e demografiche.
+
+Il tasso di churn è fortemente legato al \textbf{tipo di contratto} (Figura~\ref{fig:churn_contratto}): circa il \textbf{40\%} dei clienti con contratto \textit{month-to-month} abbandona, contro circa il \textbf{10\%} dei contratti annuali e una quota trascurabile di quelli biennali.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{churn_per_contratto.png}
+    \caption{Tasso di churn per tipo di contratto.}
+    \label{fig:churn_contratto}
+\end{figure}
+
+Anche l'\textbf{anzianità} del cliente discrimina chiaramente le due classi
+(Figura~\ref{fig:tenure_churn}): la tenure mediana è di circa \textbf{10 mesi} tra chi abbandona, contro circa \textbf{38 mesi} tra chi resta, e chi abbandona presenta anche una spesa mensile media più alta (\textbf{74.4€} contro \textbf{61.3€}). Il rischio di abbandono risulta quindi massimo nei primi mesi di rapporto contrattuale, soprattutto per i piani più costosi.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{boxplot_tenure_churn.png}
+    \caption{Distribuzione della tenure per classe di Churn.}
+    \label{fig:tenure_churn}
+\end{figure}
+
+Anche alcune variabili demografiche e di servizio mostrano un'associazione con il churn.
+I clienti \texttt{SeniorCitizen} abbandonano quasi il doppio rispetto ai non senior (\textbf{41.7\%} contro \textbf{23.6\%}), pur rappresentando solo il 16\% circa del campione (Figura~\ref{fig:churn_senior}); il dataset non contiene però variabili di reddito o utilizzo che permettano di verificarne la causa, per cui il dato resta una correlazione e non una spiegazione causale.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{churn_per_senior.png}
+    \caption{Tasso di churn per SeniorCitizen.}
+    \label{fig:churn_senior}
+\end{figure}
+
+Sul fronte dei servizi, il tasso di abbandono varia molto in base al tipo di connessione internet: raggiunge il \textbf{42\%} tra chi ha fibra ottica, scende al \textbf{19\%} con il DSL e si ferma sotto il \textbf{10\%} tra i clienti senza servizio internet. Il metodo di pagamento \textit{electronic check} è inoltre associato alla spesa mensile mediana più alta (circa \textbf{80€}), mentre i clienti con familiari a carico tendono a scegliere piani più economici (spesa mediana di circa 61€) e risultano complessivamente più stabili.
+
+Incrociando queste osservazioni emerge un profilo a rischio coerente: connessione in fibra ottica, spesa mensile elevata, pagamento tramite \textit{electronic check} e bassa anzianità contrattuale; il profilo opposto, più fedele, è quello dei clienti senza servizio internet o con un contratto a lungo termine.
+
+\subsection{Preparazione dei dati}
+
+Il dataset è stato sottoposto alle seguenti operazioni: conversione di
+\texttt{TotalCharges} da stringa a numerico, con rimozione delle 11 osservazioni risultanti in valori mancanti (tutte con \texttt{tenure} = 0, clienti appena acquisiti); eliminazione di \texttt{customerID}, privo di valore predittivo; codifica binaria manuale della variabile target \texttt{Churn} (No$\rightarrow$ 0, Yes $\rightarrow$ 1); codifica one-hot encoding (\texttt{pd.get\_dummies}, \texttt{drop\_first=True}) delle restanti variabili categoriche. Quest'ultima è stata preferita a una mappatura manuale perché alcune variabili apparentemente binarie (es. \texttt{MultipleLines}, \texttt{OnlineSecurity}) contengono in realtà una terza categoria ("No internet service"), che andrebbe persa con una codifica 0/1 semplificata.
+
+Il dataset è stato suddiviso in training set (70\%) e test set (30\%) tramite \texttt{train\_test\_split}, con \texttt{stratify} sulla variabile target per preservare in entrambi gli insiemi il class imbalance osservato (73.5\% No / 26.5\% Yes). Tutti i modelli sono stati addestrati con \texttt{random\_state=42} per garantire la riproducibilità.
+
+\subsection{Modelli}
+
+Sono stati confrontati tre modelli supervisionati:
+
+\begin{itemize}
+    \item \textbf{Regressione Logistica} (lineare): stima la probabilità di
+    churn applicando la funzione sigmoide a una combinazione lineare delle
+    feature:
+    \begin{equation}
+        P(\text{Churn}=1 \mid X) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 x_1 + \dots + \beta_n x_n)}}
+        \label{eq:sigmoide}
+    \end{equation}
+    la classe finale si ottiene applicando una soglia di decisione (0,5) alla probabilità stimata;
+    \item \textbf{Decision Tree} (non lineare): costruisce una sequenza di
+    regole di split sui valori delle feature;
+    \item \textbf{Random Forest} (non lineare): combina le previsioni di 200
+    alberi decisionali (\texttt{n\_estimators=200}) addestrati su
+    sotto-campioni casuali del training set.
+\end{itemize}
+
+A partire dalla feature importance della Random Forest sono state inoltre
+individuate le 6 variabili più informative (\texttt{TotalCharges},
+\texttt{tenure}, \texttt{MonthlyCharges}, \texttt{InternetService\_Fiber
+optic}, \texttt{PaymentMethod\_Electronic check}, \texttt{Contract\_Two year}). Tutti e tre i modelli sono stati riaddestrati anche su questo sottoinsieme ridotto, per valutare se la riduzione di dimensionalità comporti una perdita di capacità predittiva sulla classe minoritaria \texttt{Churn}.
+
+% =====================================================
+\section{Risultati}
+\label{sec:risultati}
+
+La Tabella~\ref{tab:risultati} riassume le metriche sul test set (2110 osservazioni) per le sei combinazioni modello--feature, con focus sulla classe \texttt{Churn} (la classe minoritaria, di interesse primario).
+
+\begin{table}[h]
+\centering
+\caption{Confronto delle metriche sul test set. Precision, Recall e F1 si riferiscono alla classe Churn (Yes).}
+\label{tab:risultati}
+\begin{tabular}{llcccc}
+\hline
+\textbf{Modello} & \textbf{Feature} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\hline
+Regressione Logistica & tutte (30)       & 0.807 & 0.66 & 0,57 & 0.61 \\
+Decision Tree          & tutte (30)       & 0.705 & 0.45 & 0.48 & 0.47 \\
+Random Forest          & tutte (30)       & 0.784 & 0.62 & 0.48 & 0.54 \\
+\hline
+Regressione Logistica & selezionate (6)  & 0.792 & 0.65 & 0.47 & 0.55 \\
+Decision Tree          & selezionate (6)  & 0.709 & 0.45 & 0,47 & 0.46 \\
+Random Forest          & selezionate (6)  & 0.771 & 0.59 & 0.48 & 0.53 \\
+\hline
+\end{tabular}
+\end{table}
+
+Un classificatore naive che predicesse sempre "No" otterrebbe già un'accuracy del \textbf{73.5\%}: il Decision Tree (70.5\%) si posiziona quindi al di sotto di questo baseline, mentre Regressione Logistica e Random Forest lo superano. L'accuracy da sola è però un indicatore fuorviante dato lo squilibrio di classe: la metrica più rilevante è la \textbf{recall sulla classe Churn}, perché un falso negativo (un cliente che abbandona senza essere identificato) ha un costo diretto per l'azienda.
+
+Su questo fronte la \textbf{Regressione Logistica} risulta il modello più
+efficace (recall 0.57), seguita a pari merito da Decision Tree e Random Forest (recall 0.48 per entrambi); la Random Forest si distingue però per una precision più alta (0.62 contro 0.45), ottenendo quindi un F1-score migliore (0.54 contro 0.47).
+
+La riduzione a 6 feature selezionate ha un impatto \textbf{asimmetrico} sui tre modelli. La Regressione Logistica ne risente di più: la recall sulla classe Churn scende da 0.57 a 0.47. Il Decision Tree mostra prestazioni sostanzialmente invariate (accuracy 0.705 $\rightarrow$ 0.709, F1 0.47 $\rightarrow$ 0.46), mentre la Random Forest subisce un calo moderato (accuracy 0.784 $\rightarrow$ 0.771, precision 0.62 $\rightarrow$ 0.59, recall stabile a 0.48). Questo risultato esclude qualsiasi conclusione univoca sull'effetto della feature selection: i benefici dipendono dalla natura del modello.
+
+Le matrici di confusione confermano la criticità dei falsi negativi: su 561
+abbandoni reali nel test set, la Regressione Logistica (tutte le feature) ne lascia sfuggire 242, il Decision Tree 290 e la Random Forest 293.
+% =====================================================
+\section{Discussione}
+\label{sec:discussione}
+
+\subsection{Confronto tra modelli e interpretabilità}
+
+La Regressione Logistica si conferma il modello migliore sia in termini di prestazioni sia di interpretabilità. I suoi coefficienti permettono di quantificare il contributo di ciascuna variabile alla probabilità di churn: le feature che aumentano maggiormente il rischio di abbandono sono la connessione in fibra ottica (\texttt{InternetService\_Fiberoptic}, coefficiente $+1.14$), seguita dalla presenza di più linee telefoniche (\texttt{MultipleLines\_Yes}, $+0.40$), streaming TV e movies (rispettivamente $+0.38$ e $+0.37$) e il pagamento tramite assegno elettronico (\texttt{PaymentMethod\_Electroniccheck}, $+0.36$). Le variabili che invece trattengono il cliente sono il contratto biennale ($-1.29$) e annuale ($-0.68$).
+
+La Random Forest e la Regressione Logistica sembrano inizialmente discordare sulle feature più influenti: la feature importance della Random Forest assegna i primi posti alle variabili numeriche continue (\texttt{TotalCharges} 0.19, \texttt{tenure} 0.17, \texttt{MonthlyCharges} 0.16), mentre la logistica privilegia variabili binarie come il tipo di connessione. Non si tratta però di una vera contraddizione: la Random Forest tende a sovrastimare le variabili continue rispetto a quelle binarie, come confermato dall'esperimento con una variabile rumore casuale (\texttt{random\_noise}), che il modello ha collocato al quarto posto per importanza. La logistica, al contrario, assegna coefficienti piccoli alle variabili continue per via della loro diversa scala. Una volta corretti questi bias di misurazione, i due metodi convergono sugli stessi driver individuati dall'analisi esplorativa: contratti mensili, fibra ottica e pagamento con electronic check.
+
+Il Decision Tree è il più semplice da interpretare e gestisce naturalmente le relazioni non lineari, ma è il più debole, verosimilmente per la presenza di un solo albero decisionale. La Random Forest ne migliora la stabilità combinando 200 alberi, ma le sue prestazioni restano inferiori alla Regressione Logistica e non giustificano il maggior costo computazionale.
+
+\indent La difficoltà nel prevedere la classe Churn, dove nessun modello supera un
+f1-score di 0.61, è il limite che accomuna i tre modelli ed è il riflesso diretto dello
+squilibrio tra le classi. Nei problemi di Churn esistono due tipi di errore: i falsi
+negativi, clienti che abbandonano ma sono previsti come clienti che restano, e i falsi positivi, clienti che restano previsti come clienti che abbandonano. Nel nostro caso interessa soprattutto ridurre i falsi negativi, perchè è su quei clienti che l’azienda può agire per fidelizzarli; tutti e tre i modelli, però, faticano proprio su questo fronte: la Regressione Logistica lascia sfuggire 242 abbandoni su 561, il Decision Tree 290 e la Random Forest 293. Abbiamo provato a migliorare l’aspetto abbassando la soglia della Regressione logistica da 0.5 (soglia standard) a 0.4, così da intercettare clienti con probabilità di churn più bassa a costo di più falsi positivi: in questo modo i falsi negativi scendono a 177.
+
+\subsection{Costo computazionale}
+
+Data la dimensione ridotta del dataset, i tempi di calcolo sono trascurabili per tutti e tre i modelli. In termini concettuali, tuttavia, la Regressione Logistica è la più leggera: deve stimare un coefficiente per variabile in un'unica ottimizzazione. Il Decision Tree ha un costo moderato, proporzionale al numero di nodi. La Random Forest è la più costosa, in quanto costruisce 200 alberi distinti, ciascuno su un campione diverso dei dati e con un sottoinsieme casuale di feature a ogni split, e deve mantenere tutti gli alberi in memoria. Viste le prestazioni inferiori alla Regressione Logistica, questo costo aggiuntivo non risulta giustificato nel nostro caso.
+
+% =====================================================
+\section{Conclusioni}
+\label{sec:conclusioni}
+
+Abbiamo analizzato il dataset Telco Customer Churn con l'obiettivo di prevedere l'abbandono del servizio da parte dei clienti. L'elemento più rilevante emerso fin dalla fase descrittiva è lo squilibrio di classe della variabile target (73.5\% No Churn vs 26.5\% Churn), che ha condizionato sia la scelta delle metriche di valutazione - privilegiando recall e F1 sulla classe Churn rispetto all'accuracy - sia le prestazioni dei modelli, che tendono a classificare più facilmente la classe maggioritaria.
+
+Tra i tre modelli confrontati, la \textbf{Regressione Logistica} addestrata su tutte le feature risulta la scelta migliore per questo problema: presenta la recall più alta sulla classe Churn (0.57), l'accuracy più elevata (0.807), è interpretabile tramite i propri coefficienti e richiede il costo computazionale più contenuto. I suoi coefficienti confermano le ipotesi formulate in fase esplorativa, identificando il tipo di contratto, la connessione in fibra ottica e il metodo di pagamento come i principali driver di abbandono.
+
+% =====================================================
+\section*{Utilizzo dell'Intelligenza Artificiale}
+\addcontentsline{toc}{section}{Utilizzo dell'Intelligenza Artificiale}
+
+Durante lo svolgimento del progetto è stato utilizzato un assistente basato su intelligenza artificiale (Claude, Anthropic) come supporto alla stesura dei commenti analitici nel notebook e alla redazione del presente report in LaTex. Tutte le metriche, i risultati numerici e le interpretazioni riportate sono stati verificati dal gruppo a partire dall'esecuzione diretta del codice.
+
+% =====================================================
+\bibliographystyle{plainnat}
+\bibliography{Bibliografia}
+
+\end{document}
